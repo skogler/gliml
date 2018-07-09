@@ -1,4 +1,4 @@
-add_library(gliml 
+add_library(gliml INTERFACE
 	include/gliml.h
 	include/gliml.inl
 	include/gliml_dds.h
