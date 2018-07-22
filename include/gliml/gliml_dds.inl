@@ -6,8 +6,8 @@
 inline bool
 is_dds(const void* data, unsigned int byteSize) {
     if (byteSize > sizeof(dds_header)) {
-        const dds_header* hdr = (const dds_header*) data;
-        return hdr->dwMagicFourCC == ' SDD';
+        const dds_header* hdr = reinterpret_cast<const dds_header*>(data);
+        return hdr->dwMagicFourCC == 0x20534444;
     }
     return false;
 }
@@ -17,9 +17,9 @@ inline bool
 context::load_dds(const void* data, unsigned int byteSize) {
     GLIML_ASSERT(gliml::is_dds(data, byteSize));
     this->clear();
-    
-    const dds_header* hdr = (const dds_header*) data;
-    const unsigned char* dataBytePtr = (const unsigned char*) hdr;
+
+    const dds_header* hdr = reinterpret_cast<const dds_header*>(data);
+    const unsigned char* dataBytePtr = reinterpret_cast<const unsigned char*>(hdr);
     dataBytePtr += sizeof(dds_header);
 
     // cubemap?
@@ -45,7 +45,7 @@ context::load_dds(const void* data, unsigned int byteSize) {
         this->is3D = false;
         this->numFaces = 1;
     }
-    
+
     // image format
     int bytesPerElement = 0;
     if (hdr->ddspf.dwFlags & GLIML_DDSF_FOURCC) {
@@ -53,7 +53,7 @@ context::load_dds(const void* data, unsigned int byteSize) {
         if (!this->dxtEnabled) {
             this->errorCode = GLIML_ERROR_DXT_NOT_ENABLED;
             return false;
-        }    
+        }
         this->isCompressed = true;
         switch (hdr->ddspf.dwFourCC) {
             case GLIML_FOURCC_DXT1:
@@ -92,7 +92,7 @@ context::load_dds(const void* data, unsigned int byteSize) {
             // OpenGLES style RGBA
             this->format = GLIML_GL_RGBA;
         }
-    }    
+    }
     else if ((hdr->ddspf.dwFlags & GLIML_DDSF_RGB) && (hdr->ddspf.dwRGBBitCount == 24)) {
         // 24-bit RGB, check byte order
         bytesPerElement = 3;
@@ -121,7 +121,7 @@ context::load_dds(const void* data, unsigned int byteSize) {
             this->type = GLIML_GL_UNSIGNED_SHORT_5_6_5;
             this->internalFormat = GLIML_GL_RGB;
             if (hdr->ddspf.dwRBitMask == (0x1F << 11)) {
-                // Direct3D style 
+                // Direct3D style
                 if (this->bgraEnabled) {
                     this->format = GLIML_GL_BGR;
                 }
@@ -178,7 +178,7 @@ context::load_dds(const void* data, unsigned int byteSize) {
         this->type = GLIML_GL_UNSIGNED_BYTE;
         bytesPerElement = 1;
     }
-    
+
     // for each face...
     int faceIndex;
     for (faceIndex = 0; faceIndex < this->numFaces; faceIndex++) {
@@ -197,12 +197,12 @@ context::load_dds(const void* data, unsigned int byteSize) {
             curFace.target = this->target;
         }
         curFace.numMipmaps = (hdr->dwMipMapCount == 0) ? 1 : hdr->dwMipMapCount;
-        
+
         // for each mipmap
         int mipIndex;
         for (mipIndex = 0; mipIndex < curFace.numMipmaps; mipIndex++) {
             face::mipmap& curMip = curFace.mipmaps[mipIndex];
-            
+
             // mipmap dimensions
             int w = hdr->dwWidth >> mipIndex;
             if (w <= 0) w = 1;
@@ -213,7 +213,7 @@ context::load_dds(const void* data, unsigned int byteSize) {
             curMip.width = w;
             curMip.height = h;
             curMip.depth = d;
-            
+
             // mipmap byte size
             if (this->isCompressed) {
                 curMip.size = ((w+3)/4) * ((h+3)/4) * d * bytesPerElement;
@@ -221,14 +221,14 @@ context::load_dds(const void* data, unsigned int byteSize) {
             else {
                 curMip.size = w * h * d * bytesPerElement;
             }
-            
+
             // set and advance surface data pointer
             curMip.data = dataBytePtr;
             dataBytePtr += curMip.size;
         }
     }
-    GLIML_ASSERT(dataBytePtr == ((const unsigned char*)data) + byteSize);
-    
+    GLIML_ASSERT(dataBytePtr == reinterpret_cast<const unsigned char*>(data) + byteSize);
+
     // ...and we're done
     return true;
 }

@@ -10,7 +10,7 @@ is_ktx(const void* data, unsigned int byteSize) {
         0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A
     };
     if (byteSize > sizeof(ktx_header)) {
-        const ktx_header* hdr = (const ktx_header*) data;
+        const ktx_header* hdr = reinterpret_cast<const ktx_header*>(data);
         int i;
         for (i = 0; i < numMagic; i++) {
             if (hdr->identifier[i] != magic[i]) {
@@ -23,13 +23,13 @@ is_ktx(const void* data, unsigned int byteSize) {
 }
 
 //------------------------------------------------------------------------------
-inline void*
+inline const void*
 mip_data_and_size(const ktx_header* hdr, int faceIndex, int mipIndex, int& outSize) {
-    unsigned char* result = 0;
-    unsigned char* ptr = (unsigned char*) hdr;
+    const unsigned char* result = nullptr;
+    const unsigned char* ptr = reinterpret_cast<const unsigned char*>(hdr);
     ptr += sizeof(ktx_header) + hdr->bytesOfKeyValueData;
     for (int i = 0; i <= mipIndex; i++) {
-        const unsigned int faceSize = *(unsigned int*)ptr;
+        const unsigned int faceSize = *reinterpret_cast<const unsigned int*>(ptr);
 
         // set result to start of face data within miplevel
         result = ptr + 4 + (faceSize * faceIndex);
@@ -49,7 +49,7 @@ context::load_ktx(const void* data, unsigned int byteSize) {
     GLIML_ASSERT(gliml::is_ktx(data, byteSize));
     this->clear();
 
-    const ktx_header* hdr = (const ktx_header*) data;
+    const ktx_header* hdr = reinterpret_cast<const ktx_header*>(data);
 
     // check if file and host system endianess match
     if (hdr->endianness != 0x04030201) {
@@ -172,7 +172,7 @@ context::load_ktx(const void* data, unsigned int byteSize) {
             curMip.height = h;
             curMip.depth = d;
             curMip.data = mip_data_and_size(hdr, faceIndex, mipIndex, curMip.size);
-            GLIML_ASSERT(curMip.data < ((const char*)data)+byteSize);
+            GLIML_ASSERT(curMip.data < reinterpret_cast<const char*>(data) + byteSize);
         }
     }
     return true;

@@ -6,7 +6,7 @@
 inline bool
 is_pvr(const void* data, unsigned int byteSize) {
     if (byteSize > sizeof(pvr_header)) {
-        const pvr_header* hdr = (const pvr_header*) data;
+        const pvr_header* hdr = reinterpret_cast<const pvr_header*>(data);
         return hdr->version == 0x03525650;
     }
     return false;
@@ -17,17 +17,17 @@ inline bool
 context::load_pvr(const void* data, unsigned int byteSize) {
     GLIML_ASSERT(gliml::is_pvr(data, byteSize));
     this->clear();
-    
-    const pvr_header* hdr = (const pvr_header*) data;
-    const unsigned char* dataBytePtr = (const unsigned char*) hdr;
+
+    const pvr_header* hdr = reinterpret_cast<const pvr_header*>(data);
+    const unsigned char* dataBytePtr = reinterpret_cast<const unsigned char*>(hdr);
     dataBytePtr += sizeof(pvr_header) + hdr->metaDataSize;
-    
+
     // texture arrays not yet supported
     if (hdr->numSurfaces > 1) {
         this->errorCode = GLIML_ERROR_TEXTURE_ARRAYS_NOT_SUPPORTED;
         return false;
     }
-    
+
     // cube map?
     bool isCubeMap = false;
     if ((hdr->numFaces != 1) && (hdr->numFaces != 6)) {
@@ -55,7 +55,7 @@ context::load_pvr(const void* data, unsigned int byteSize) {
         this->is3D = false;
         this->numFaces = 1;
     }
-    
+
     // image format
     if (!this->pvrtcEnabled) {
         this->errorCode = GLIML_ERROR_PVRTC_NOT_ENABLED;
@@ -72,7 +72,7 @@ context::load_pvr(const void* data, unsigned int byteSize) {
         this->errorCode = GLIML_ERROR_INVALID_COMPRESSED_FORMAT;
         return false;
     }
-    
+
     // for each mipmap...
     unsigned int mipIndex;
     for (mipIndex = 0; mipIndex < hdr->mipMapCount; mipIndex++) {
@@ -80,7 +80,7 @@ context::load_pvr(const void* data, unsigned int byteSize) {
         for (faceIndex = 0; faceIndex < hdr->numFaces; faceIndex++) {
             face& curFace = this->faces[faceIndex];
             face::mipmap& curMip = curFace.mipmaps[mipIndex];
-            
+
             if (isCubeMap) {
                 switch (faceIndex) {
                     case 0:     curFace.target = GLIML_GL_TEXTURE_CUBE_MAP_POSITIVE_X; break;
@@ -95,7 +95,7 @@ context::load_pvr(const void* data, unsigned int byteSize) {
                 curFace.target = this->target;
             }
             curFace.numMipmaps = hdr->mipMapCount;
-            
+
             // mipmap dimensions
             int w = hdr->width >> mipIndex;
             if (w <= 0) w = 1;
@@ -106,7 +106,7 @@ context::load_pvr(const void* data, unsigned int byteSize) {
             curMip.width = w;
             curMip.height = h;
             curMip.depth = d;
-            
+
             int blockSize, widthBlocks, heightBlocks, bpp;
             if (GLIML_GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG == this->format) {
                 blockSize = 4 * 4;
@@ -120,18 +120,18 @@ context::load_pvr(const void* data, unsigned int byteSize) {
                 heightBlocks = h / 4;
                 bpp = 2;
             }
-        
+
             // clamp to minimal block size
             widthBlocks = widthBlocks < 2 ? 2 : widthBlocks;
             heightBlocks = heightBlocks < 2 ? 2 : heightBlocks;
-        
+
             curMip.size = widthBlocks * heightBlocks * ((blockSize * bpp) / 8);
             curMip.data = dataBytePtr;
             dataBytePtr += curMip.size;
         }
     }
-    GLIML_ASSERT(dataBytePtr == ((const unsigned char*)data) + byteSize);
-    
+    GLIML_ASSERT(dataBytePtr == reinterpret_cast<const unsigned char*>(data) + byteSize);
+
     // and done
     return true;
 }

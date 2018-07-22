@@ -86,7 +86,7 @@ context::clear() {
             curMipmap.height = 0;
             curMipmap.depth = 0;
             curMipmap.size  = 0;
-            curMipmap.data = 0;
+            curMipmap.data = nullptr;
         }
     }
 }
