@@ -2,10 +2,10 @@
 //------------------------------------------------------------------------------
 /**
     gliml - GL image loader library
-    
-    gliml main header file. Include this file after the GL header, and 
+
+    gliml main header file. Include this file after the GL header, and
     optionally define the following macros before the include:
-    
+
     GLIML_ASSERT(x)     - your custom assert implementation, default is assert
     GLIML_NO_DDS        - don't include DDS support
     GLIML_NO_PVR        - don't include PVR support
@@ -13,6 +13,7 @@
 */
 
 #ifndef GLIML_ASSERT
+#include <cassert>
 #define GLIML_ASSERT(x) assert(x)
 #endif
 
@@ -72,7 +73,7 @@ typedef float           GLfloat;        /* single precision float */
 typedef float           GLclampf;       /* single precision float in [0,1] */
 typedef double          GLdouble;       /* double precision float */
 typedef double          GLclampd;       /* double precision float in [0,1] */
-    
+
 // test if image data is in DDS format
 #ifndef GLIML_NO_DDS
 bool is_dds(const void* data, unsigned int size);
@@ -94,12 +95,12 @@ public:
     context();
     /// destructor
     ~context();
-    
+
     /// enable or disable DXT support (set depending on DXT GL extension)
     void enable_dxt(bool b);
     /// enable or disable PVRTC support (set depending on PVRTC GL extension)
     void enable_pvrtc(bool b);
-    /// enable or disable ETC2 support 
+    /// enable or disable ETC2 support
     void enable_etc2(bool b);
     /// enable BGRA support
     void enable_bgra(bool b);
@@ -150,14 +151,14 @@ public:
     GLsizei image_size(int face_index, int mip_index) const;
     /// get pointer to image data
     const GLvoid* image_data(int face_index, int mip_index) const;
-    
+
 private:
     /// clear the object
     void clear();
 
     static const int MaxNumFaces = 6;
     static const int MaxNumMipmaps = 16;
-    
+
     bool dxtEnabled;
     bool pvrtcEnabled;
     bool etc2Enabled;
