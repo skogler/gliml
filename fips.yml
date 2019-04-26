@@ -1,7 +1,0 @@
-#
-# gliml
-#
----
-exports:
-    header-dirs: [ include ]
-
